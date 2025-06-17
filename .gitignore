@@ -1,0 +1,36 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environment
+.venv/
+env/
+venv/
+
+# VS Code and PyCharm project files
+.vscode/
+.idea/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Python environment metadata
+*.egg-info/
+
+# Log files
+*.log
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Cache and large data
+data/ikpu_cache.csv
+data/ikpu_embeddings.npz
+
+# Excel outputs (optional, если генерируются)
+data/predicted_ikpu.xlsx
+
+# OS-specific
+*.swp
