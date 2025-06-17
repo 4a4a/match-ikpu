@@ -118,7 +118,7 @@ else:
     feedback_vecs, feedback = [], pd.DataFrame()
 
 # === Объединённый каталог ===
-all_embeddings = catalog_vecs + feedback_vecs
+all_embeddings = np.vstack([catalog_vecs, feedback_vecs])
 all_ikpu = pd.concat([catalog, feedback], ignore_index=True)
 
 # === Поиск ===
