@@ -34,3 +34,6 @@ data/predicted_ikpu.xlsx
 
 # OS-specific
 *.swp
+# .gitignore
+data/*.npz
+data/*_checksums.csv
