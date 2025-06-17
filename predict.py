@@ -4,7 +4,7 @@ import hashlib
 from tqdm import tqdm
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
-from utils import preprocess_text, load_product_data, load_ikpu_data
+from utils import preprocess_text, load_product_data, load_ikpu_data, build_ikpu_text
 
 # === Параметры ===
 SIMILARITY_THRESHOLD = 0.5
@@ -22,7 +22,10 @@ def md5_hash(text):
     return hashlib.md5(text.encode('utf-8')).hexdigest()
 
 def build_checksum(df):
-    return (df['ИКПУ'].astype(str) + '|' + df['text'].apply(md5_hash)).tolist()
+    if df.empty:
+        return []
+    df_sorted = df[['ИКПУ', 'text']].copy().sort_values(by=['ИКПУ', 'text']).reset_index(drop=True)
+    return (df_sorted['ИКПУ'].astype(str) + '|' + df_sorted['text'].apply(md5_hash)).tolist()
 
 def save_embeddings(file, texts, vectors, codes, names, checksums):
     np.savez_compressed(file, vectors=vectors, codes=codes, names=names, texts=texts)
@@ -63,8 +66,6 @@ products['query'] = (
 
 ikpu['brand'] = ikpu.get('brand', ikpu.iloc[:, 4])
 ikpu['Группа'] = ikpu['Класс']
-from utils import build_ikpu_text
-
 ikpu['text'] = build_ikpu_text(ikpu)
 
 catalog = ikpu.copy()
@@ -98,7 +99,7 @@ model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
 if validate_cache(CATALOG_CHECKSUM_FILE, catalog_checksums):
     print("✅ Кеш каталога валиден — загружаем")
     _, catalog_vecs_np, catalog_codes, catalog_names = load_embeddings(CATALOG_EMBED_FILE)
-    catalog_vecs = catalog_vecs_np.tolist()
+    catalog_vecs = catalog_vecs_np
 else:
     print("⚠️ Кеш каталога устарел или отсутствует — пересчитываем")
     catalog_vecs = encode_batch(model, catalog['text'].tolist())
@@ -109,13 +110,13 @@ if not feedback.empty:
     if validate_cache(FEEDBACK_CHECKSUM_FILE, feedback_checksums):
         print("✅ Кеш feedback валиден — загружаем")
         _, feedback_vecs_np, feedback_codes, feedback_names = load_embeddings(FEEDBACK_EMBED_FILE)
-        feedback_vecs = feedback_vecs_np.tolist()
+        feedback_vecs = feedback_vecs_np
     else:
         print("⚠️ Кеш feedback устарел или отсутствует — пересчитываем")
         feedback_vecs = encode_batch(model, feedback['text'].tolist())
         save_embeddings(FEEDBACK_EMBED_FILE, feedback['text'].tolist(), np.array(feedback_vecs), feedback['ИКПУ'].tolist(), feedback['Название ИКПУ'].tolist(), feedback_checksums)
 else:
-    feedback_vecs, feedback = [], pd.DataFrame()
+    feedback_vecs = np.empty((0, catalog_vecs.shape[1]))
 
 # === Объединённый каталог ===
 all_embeddings = np.vstack([catalog_vecs, feedback_vecs])
